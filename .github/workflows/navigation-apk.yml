@@ -36,7 +36,7 @@ jobs:
                   if not entry.filename.startswith('assets/') or entry.is_dir(): continue
                   rel=pathlib.PurePosixPath(entry.filename).relative_to('assets')
                   if '..' in rel.parts: raise ValueError('unsafe asset path')
-                  for base in ['app/build/generated/standardAssets','app/build/generated/recoveryAssets']:
+                  for base in ['app/build/generated/standardAssets']:
                       p=pathlib.Path(base).joinpath(*rel.parts);p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(entry))
                   p=pathlib.Path('app/src/main/assets').joinpath(*rel.parts)
                   if not p.exists():p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(entry))
