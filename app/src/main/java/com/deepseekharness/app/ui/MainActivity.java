@@ -174,12 +174,13 @@ public class MainActivity extends AppCompatActivity {
             nav.setSelectedItemId(settingsEntry ? R.id.nav_settings
                     : getIntent().getBooleanExtra("open_plugins", false) ? R.id.nav_plugins : R.id.nav_launch);
         }
-        // 直接进入工作区时原生顶栏与底部导航都不展示，启动完成后立刻切到 Web。
+        nav.setVisibility(View.GONE);
+        // 直接进入工作区时隐藏原生顶栏。
         if (!settingsEntry) {
             nav.setVisibility(View.GONE);
             findViewById(R.id.app_bar).setVisibility(View.GONE);
         }
-        WorkspaceEntryPermissions.offer(this);
+
         consumeTaskTarget(getIntent());
         // 只订阅后台检查；提示不切换导航，也不自动打开更新页或 Web。
         startupUpdates = com.deepseekharness.app.core.UpdateEngine.get(this);
@@ -233,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
                 || intent.getBooleanExtra("open_launch", false))) {
             intent.removeExtra("open_launch");
             findViewById(R.id.app_bar).setVisibility(View.VISIBLE);
-            nav.setSelectedItemId(R.id.nav_settings);
+            showSettingsEntry();
         }
         if (nav != null && intent.getBooleanExtra("open_plugins", false)) nav.setSelectedItemId(R.id.nav_plugins);
         if (nav != null && intent.getBooleanExtra("open_launch", false)) {
@@ -297,9 +298,10 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().popBackStackImmediate(null,
                     androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
         findViewById(R.id.app_bar).setVisibility(View.VISIBLE);
-        nav.setVisibility(View.VISIBLE);
+        nav.setVisibility(View.GONE);
         directWorkspace = false;
-        nav.setSelectedItemId(R.id.nav_settings);
+        UiMotion.page(this, getSupportFragmentManager().beginTransaction())
+                .replace(R.id.fragment_container, new SettingsFragment()).commit();
     }
 
     private void reenterWorkspace() {

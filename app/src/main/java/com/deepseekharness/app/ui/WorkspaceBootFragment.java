@@ -47,11 +47,6 @@ public class WorkspaceBootFragment extends Fragment {
                 enterWeb();
                 return;
             }
-            if (controller.getWebGeneration() > 0 && !controller.isStarting()
-                    && !controller.isStopping() && !controller.getWebAuthUrl().isEmpty()) {
-                enterWeb();
-                return;
-            }
             if (startedAt > 0 && System.currentTimeMillis() - startedAt > STARTUP_TIMEOUT_MS) {
                 showFailure(com.deepseekharness.app.util.UiText.text("启动超时，请到设置里的「运行与日志」查看日志"));
                 return;
@@ -90,6 +85,8 @@ public class WorkspaceBootFragment extends Fragment {
     @Override
     public void onPause() {
         ui.removeCallbacks(watch);
+        request++;
+        entering = false;
         super.onPause();
     }
 
@@ -176,7 +173,8 @@ public class WorkspaceBootFragment extends Fragment {
             final String authCookie = cookie;
             final String authFailure = failure;
             ui.post(() -> {
-                if (ticket != request || getView() != root || !isAdded()) return;
+                if (ticket != request || getView() != root || !isAdded() || !isResumed()
+                        || activity.isFinishing() || activity.isDestroyed()) return;
                 if (generation != controller.getWebGeneration()
                         || !url.equals(controller.getWebAuthUrl())) {
                     entering = false;
