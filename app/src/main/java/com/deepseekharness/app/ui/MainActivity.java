@@ -89,9 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
     // 启动门禁：未欢迎 → Welcome；环境未解压 → Extract
     if (!config.isWelcomed()) {
-      startActivity(new Intent(this, WelcomeActivity.class));
-      finish();
-      return;
+      config.setWelcomed(true);
     }
     boolean limitedAllowed =
         getIntent().getBooleanExtra("limited_entry", false)
@@ -212,11 +210,17 @@ public class MainActivity extends AppCompatActivity {
 
     // 通知点击进入：必须在 setSelectedItemId 之前登记 —— setSelectedItemId 会【同步】
     // 触发监听器创建 LaunchFragment，那时再置标记已经晚了（参数带不进去）。
+    boolean settingsEntry = getIntent().getBooleanExtra("open_settings", false);
+    if (savedInstanceState == null && !settingsEntry
+        && !getIntent().getBooleanExtra("open_plugins", false)
+        && !getIntent().getBooleanExtra("open_launch", false)) pendingOpenWeb = true;
     consumeOpenWeb(getIntent());
     if (savedInstanceState == null) {
-      nav.setSelectedItemId(
+      nav.setSelectedItemId(settingsEntry ? R.id.nav_settings :
           getIntent().getBooleanExtra("open_plugins", false) ? R.id.nav_plugins : R.id.nav_launch);
     }
+    nav.setVisibility(android.view.View.GONE);
+    WorkspaceEntryPermissions.offer(this);
     consumeTaskTarget(getIntent());
     // 只订阅后台检查；提示不切换导航，也不自动打开更新页或 Web。
     startupUpdates = com.deepseekharness.app.core.UpdateEngine.get(this);
@@ -292,6 +296,8 @@ public class MainActivity extends AppCompatActivity {
     super.onNewIntent(intent);
     setIntent(intent);
     BottomNavigationView nav = findViewById(R.id.bottom_nav);
+    if (nav != null && intent.getBooleanExtra("open_settings", false))
+      nav.setSelectedItemId(R.id.nav_settings);
     if (nav != null && intent.getBooleanExtra("open_plugins", false))
       nav.setSelectedItemId(R.id.nav_plugins);
     if (nav != null && intent.getBooleanExtra("open_launch", false)) {
