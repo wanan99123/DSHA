@@ -41,6 +41,7 @@ jobs:
                   p=pathlib.Path('app/src/main/assets').joinpath(*rel.parts)
                   if not p.exists():p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(entry))
           PY
+      - uses: android-actions/setup-android@v3
       - name: Android SDK
         run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;26.3.11579264'
       - name: Compile independently signed debug APK
