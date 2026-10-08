@@ -37,12 +37,16 @@ public final class WebFullscreenUi {
           // 顶部保留稳定安全区，避免 ROM 在键盘/焦点切换时短暂报告状态栏不可见而把正文顶上去。
           Insets stableTop =
               insets.getInsetsIgnoringVisibility(
-                  WindowInsetsCompat.Type.statusBars()
+                  WindowInsetsCompat.Type.systemBars()
                       | WindowInsetsCompat.Type.displayCutout()
                       | WindowInsetsCompat.Type.captionBar());
           Insets safe = Insets.max(bars, stableTop);
           int keyboard = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
-          view.setPadding(safe.left, safe.top, safe.right, Math.max(safe.bottom, keyboard));
+          // Reserve the real navigation area plus a small gap, once for the
+          // entire WebView. Use max, not addition, for overlapping IME insets.
+          int bottomGap = Math.round(8 * view.getResources().getDisplayMetrics().density);
+          view.setPadding(
+              safe.left, safe.top, safe.right, Math.max(safe.bottom, keyboard) + bottomGap);
           return WindowInsetsCompat.CONSUMED;
         });
     applySystemBars(activity);
@@ -58,8 +62,11 @@ public final class WebFullscreenUi {
             > 0.5);
     controller.setSystemBarsBehavior(
         WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-    // 显示状态栏，正文由 insets 避让；底部仍可通过手势唤出系统导航。
-    controller.show(WindowInsetsCompat.Type.statusBars());
-    controller.hide(WindowInsetsCompat.Type.navigationBars());
+    // Keep navigation buttons/gesture bar visible; native insets lift the
+    // composer and cache statistics together without fixed web CSS offsets.
+    controller.setAppearanceLightNavigationBars(
+        androidx.core.graphics.ColorUtils.calculateLuminance(activity.getColor(R.color.surface))
+            > 0.5);
+    controller.show(WindowInsetsCompat.Type.systemBars());
   }
 }
