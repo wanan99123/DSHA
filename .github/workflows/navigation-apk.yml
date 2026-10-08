@@ -1,0 +1,58 @@
+name: Navigation fix APK
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use published source with navigation fix
+        run: |
+          cp app/src/main/java/com/deepseekharness/app/ui/WebFullscreenUi.java /tmp/WebFullscreenUi.java
+          git fetch --depth=1 https://github.com/DSH-APP/DSHA.git tag v0.1.7-rc2
+          git checkout --detach FETCH_HEAD
+          cp /tmp/WebFullscreenUi.java app/src/main/java/com/deepseekharness/app/ui/WebFullscreenUi.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Restore matching official runtime assets
+        run: |
+          curl -fL --retry 3 https://github.com/DSH-APP/DSHA/releases/download/v0.1.7-rc2/dsha-0.1.7-rc2.apk -o /tmp/official.apk
+          curl -fL --retry 3 https://github.com/DSH-APP/DSHA/releases/download/v0.1.7-rc2/dsha-0.1.7-rc2.apk.sha256 -o /tmp/official.sha256
+          python3 - <<'PY'
+          import zipfile,pathlib,hashlib
+          apk=pathlib.Path('/tmp/official.apk')
+          expected=pathlib.Path('/tmp/official.sha256').read_text().split()[0]
+          assert hashlib.sha256(apk.read_bytes()).hexdigest()==expected
+          with zipfile.ZipFile(apk) as z:
+              for entry in z.infolist():
+                  if not entry.filename.startswith('assets/') or entry.is_dir(): continue
+                  rel=pathlib.PurePosixPath(entry.filename).relative_to('assets')
+                  if '..' in rel.parts: raise ValueError('unsafe asset path')
+                  for base in ['app/build/generated/standardAssets','app/build/generated/recoveryAssets']:
+                      p=pathlib.Path(base).joinpath(*rel.parts);p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(entry))
+                  p=pathlib.Path('app/src/main/assets').joinpath(*rel.parts)
+                  if not p.exists():p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(entry))
+          PY
+      - name: Android SDK
+        run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;26.3.11579264'
+      - name: Compile independently signed debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleStandardDebug -x :app:prepareStandardAssets -x :app:prepareRecoveryAssets -x :app:prepareBackupAssets -x :app:prepareRuntimeDescriptor --no-daemon --max-workers=2
+          mkdir -p dist
+          cp app/build/outputs/apk/standard/debug/*.apk dist/DSHA-navigation-fix-0.1.7-rc2-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose dist/*.apk
+          sha256sum dist/*.apk > dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DSHA-navigation-fix-apk
+          path: dist/
+          if-no-files-found: error
