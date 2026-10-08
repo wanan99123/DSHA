@@ -9,12 +9,26 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - name: Use published source with navigation fix
+      - name: Overlay workspace-first changes on published source
         run: |
-          cp app/src/main/java/com/deepseekharness/app/ui/WebFullscreenUi.java /tmp/WebFullscreenUi.java
+          mkdir -p /tmp/keep
+          while read -r f; do
+            [ -z "$f" ] && continue
+            mkdir -p "/tmp/keep/$(dirname "$f")"
+            cp "$f" "/tmp/keep/$f"
+          done <<'FILES'
+          app/src/main/java/com/deepseekharness/app/ui/WebFullscreenUi.java
+          app/src/main/java/com/deepseekharness/app/ui/MainActivity.java
+          app/src/main/java/com/deepseekharness/app/ui/LaunchFragment.java
+          app/src/main/java/com/deepseekharness/app/ui/SettingsFragment.java
+          app/src/main/java/com/deepseekharness/app/ui/PictureInPictureActivity.java
+          app/src/main/java/com/deepseekharness/app/ui/WorkspaceBootFragment.java
+          app/src/main/java/com/deepseekharness/app/ui/WorkspaceEntryPermissions.java
+          app/src/main/res/layout/fragment_workspace_boot.xml
+          FILES
           git fetch --depth=1 https://github.com/DSH-APP/DSHA.git tag v0.1.7-rc2
           git checkout --force --detach FETCH_HEAD
-          cp /tmp/WebFullscreenUi.java app/src/main/java/com/deepseekharness/app/ui/WebFullscreenUi.java
+          cp -r /tmp/keep/app/. app/
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
