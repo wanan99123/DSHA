@@ -13,7 +13,7 @@ jobs:
         run: |
           cp app/src/main/java/com/deepseekharness/app/ui/WebFullscreenUi.java /tmp/WebFullscreenUi.java
           git fetch --depth=1 https://github.com/DSH-APP/DSHA.git tag v0.1.7-rc2
-          git checkout --detach FETCH_HEAD
+          git checkout --force --detach FETCH_HEAD
           cp /tmp/WebFullscreenUi.java app/src/main/java/com/deepseekharness/app/ui/WebFullscreenUi.java
       - uses: actions/setup-java@v4
         with:
