@@ -61,6 +61,9 @@ jobs:
                   p=pathlib.Path('app/src/main/assets').joinpath(*rel.parts)
                   if not p.exists():p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(z.read(entry))
           PY
+          # Gradle packages generated standardAssets ahead of src/main/assets: copy the new JS there too.
+          mkdir -p app/build/generated/standardAssets/web-integration
+          cp app/src/main/assets/web-integration/workspace-settings.js app/build/generated/standardAssets/web-integration/
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
@@ -70,12 +73,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleStandardDebug -x :app:prepareStandardAssets -x :app:prepareRecoveryAssets -x :app:prepareBackupAssets -x :app:prepareRuntimeDescriptor --no-daemon --max-workers=2
+          unzip -p app/build/outputs/apk/standard/debug/*.apk assets/web-integration/workspace-settings.js | grep -q 'DshaNativeSettings'
           mkdir -p dist
-          cp app/build/outputs/apk/standard/debug/*.apk dist/DSHA-workspace-first-v4-0.1.7-rc2-debug.apk
+          cp app/build/outputs/apk/standard/debug/*.apk dist/DSHA-workspace-first-v5-0.1.7-rc2-debug.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose dist/*.apk
           sha256sum dist/*.apk > dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: DSHA-workspace-first-v4-apk
+          name: DSHA-workspace-first-v5-apk
           path: dist/
           if-no-files-found: error
