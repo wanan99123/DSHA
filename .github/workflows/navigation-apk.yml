@@ -1,4 +1,5 @@
 name: Navigation fix APK
+run-name: Workspace settings v10 (${{ github.sha }})
 on:
   workflow_dispatch:
 permissions:
@@ -12,6 +13,7 @@ jobs:
       - name: Overlay workspace-first changes on published source
         run: |
           mkdir -p /tmp/keep
+          cp -r tools/workspace-settings /tmp/workspace-settings-ci
           while read -r f; do
             [ -z "$f" ] && continue
             mkdir -p "/tmp/keep/$(dirname "$f")"
@@ -36,6 +38,8 @@ jobs:
           git fetch --depth=1 https://github.com/DSH-APP/DSHA.git tag v0.1.7-rc2
           git checkout --force --detach FETCH_HEAD
           cp -r /tmp/keep/app/. app/
+          mkdir -p tools/workspace-settings
+          cp -r /tmp/workspace-settings-ci/. tools/workspace-settings/
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -43,6 +47,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Check workspace scripts
+        run: |
+          node --check app/src/main/assets/web-integration/workspace-settings.js
+          node --check app/src/main/assets/web-integration/page.js
+          node --check tools/workspace-settings/live-regression.js
       - name: Restore matching official runtime assets
         run: |
           curl -fL --retry 3 https://github.com/DSH-APP/DSHA/releases/download/v0.1.7-rc2/dsha-0.1.7-rc2.apk -o /tmp/official.apk
@@ -71,18 +80,37 @@ jobs:
           packages: platform-tools
       - name: Android SDK
         run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0' 'ndk;26.3.11579264'
-      - name: Compile independently signed debug APK
+      - name: Restore stable fork debug signing key
+        env:
+          DSHA_WORKSPACE_DEBUG_KEYSTORE_B64: ${{ secrets.DSHA_WORKSPACE_DEBUG_KEYSTORE_B64 }}
+        run: |
+          python3 - <<'PY'
+          import base64,os,pathlib
+          raw=os.environ.get('DSHA_WORKSPACE_DEBUG_KEYSTORE_B64','')
+          if not raw:raise SystemExit('Missing stable workspace signing secret; refusing random debug key')
+          p=pathlib.Path.home()/'.android/debug.keystore'
+          p.parent.mkdir(parents=True,exist_ok=True)
+          p.write_bytes(base64.b64decode(raw,validate=True));p.chmod(0o600)
+          PY
+      - name: Compile persistent workspace debug APK
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleStandardDebug -x :app:prepareStandardAssets -x :app:prepareRecoveryAssets -x :app:prepareBackupAssets -x :app:prepareRuntimeDescriptor --no-daemon --max-workers=2
           unzip -p app/build/outputs/apk/standard/debug/*.apk assets/web-integration/workspace-settings.js | grep -q 'DshaNativeSettings'
           unzip -p app/build/outputs/apk/standard/debug/*.apk assets/web-integration/page.js | grep -q 'data-sidebar-close'
           mkdir -p dist
-          cp app/build/outputs/apk/standard/debug/*.apk dist/DSHA-workspace-first-v8-0.1.7-rc2-debug.apk
+          cp app/build/outputs/apk/standard/debug/*.apk dist/DSHA-workspace-first-v10-0.1.7-rc2-debug.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose dist/*.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs dist/*.apk > dist/SIGNING-CERTIFICATE.txt
+          python3 tools/workspace-settings/verify-packaged.py dist/*.apk --output dist/PACKAGE-VERIFICATION.json
+          cp tools/workspace-settings/README.md dist/README.txt
+          cp app/src/main/assets/web-integration/workspace-settings.js dist/workspace-settings.js
+          printf '%s\n' '${{ github.sha }}' > dist/SOURCE-COMMIT.txt
           sha256sum dist/*.apk > dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: DSHA-workspace-first-v8-apk
+          name: DSHA-workspace-first-v10-apk
           path: dist/
           if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

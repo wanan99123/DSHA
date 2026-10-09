@@ -449,10 +449,19 @@ public class WebPreviewActivity extends PictureInPictureActivity implements WebF
 
     private class PreviewChromeClient extends WebChromeClient {
         private final WebViewMicrophone audio;
+        private int settingsDiagnosticCount;
         PreviewChromeClient(WebViewMicrophone audio){this.audio=audio;}
         @Override public void onPermissionRequest(android.webkit.PermissionRequest request){audio.request(request);}
         @Override public void onPermissionRequestCanceled(android.webkit.PermissionRequest request){audio.cancelled(request);}
         @Override public boolean onConsoleMessage(android.webkit.ConsoleMessage message) {
+            if (message.message().startsWith("[DSHA_SETTINGS] ") && message.message().length() <= 4000
+                    && webView != null && WebPreviewPolicy.sameService(baseUrl, webView.getUrl())) {
+                if (settingsDiagnosticCount++ < 100) {
+                    com.deepseekharness.app.core.DiagnosticLog.record(WebPreviewActivity.this, "WEB_SETTINGS",
+                            message.message().substring("[DSHA_SETTINGS] ".length()));
+                }
+                return true;
+            }
             com.deepseekharness.app.core.StartupDiagnostics diagnostics = com.deepseekharness.app.core.HarnessController.get(WebPreviewActivity.this).startupDiagnostics();
             if (message.message().startsWith("[DSHA_PAGE] ") && message.message().length() <= 9500
                     && webView != null && WebPreviewPolicy.sameService(baseUrl, webView.getUrl())) {
