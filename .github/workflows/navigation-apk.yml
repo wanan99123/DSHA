@@ -78,11 +78,11 @@ jobs:
           unzip -p app/build/outputs/apk/standard/debug/*.apk assets/web-integration/workspace-settings.js | grep -q 'DshaNativeSettings'
           unzip -p app/build/outputs/apk/standard/debug/*.apk assets/web-integration/page.js | grep -q 'data-sidebar-close'
           mkdir -p dist
-          cp app/build/outputs/apk/standard/debug/*.apk dist/DSHA-workspace-first-v7-0.1.7-rc2-debug.apk
+          cp app/build/outputs/apk/standard/debug/*.apk dist/DSHA-workspace-first-v8-0.1.7-rc2-debug.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose dist/*.apk
           sha256sum dist/*.apk > dist/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: DSHA-workspace-first-v7-apk
+          name: DSHA-workspace-first-v8-apk
           path: dist/
           if-no-files-found: error

@@ -20,6 +20,7 @@
     + '[data-dsha-workspace-tools] .dsha-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:rgba(95,103,220,.12);color:#6065ce;font-weight:bold;margin-right:12px;flex:none}'
     + '[data-dsha-workspace-tools] small{display:block;font-size:11px;opacity:.66;margin-top:3px}'
     + '[data-dsha-workspace-tools] .dsha-chevron{margin-left:auto;opacity:.55}'
+    + '[data-dsha-settings-panel]{box-sizing:border-box!important;position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;inset:auto!important;transform:translate(-50%,-50%)!important;width:min(90vw,540px)!important;max-width:90vw!important;height:min(76dvh,680px)!important;max-height:76dvh!important;min-height:0!important;overflow-y:auto!important;border-radius:18px!important;margin:0!important;z-index:2147483640!important}'
     + 'body:has([data-dsha-workspace-tools]) [role=dialog],body:has([data-dsha-workspace-tools]) [aria-modal=true],body:has([data-dsha-workspace-tools]) dialog[open]{box-sizing:border-box!important;position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;inset:auto!important;transform:translate(-50%,-50%)!important;width:min(92vw,560px)!important;max-width:92vw!important;height:min(78dvh,700px)!important;max-height:78dvh!important;min-height:0!important;overflow-y:auto!important;border-radius:18px!important;margin:0!important}'
     + 'body:has([data-dsha-workspace-tools]) [role=dialog] > *,body:has([data-dsha-workspace-tools]) [aria-modal=true] > *{max-height:78dvh!important}'
     + 'body:has([data-dsha-workspace-tools]) [role=dialog] [data-radix-scroll-area-viewport]{max-height:calc(78dvh - 74px)!important;overflow-y:auto!important}';
@@ -30,25 +31,51 @@
     var text = e.textContent || '';
     return (text.includes('通用设置') || text.includes('General Settings')) && (text.includes('工作步骤展示') || text.includes('Work Steps') || text.includes('外观') || text.includes('Appearance'));
   }
+  function sidebarSettings() {
+    // Some DSH versions use a mobile side sheet, not a Radix dialog.
+    var exports = Array.from(document.querySelectorAll('button, [role="button"]')).filter(function(e) {
+      return visible(e) && (e.textContent || '').trim() === '导出会话日志';
+    });
+    for (var i=0; i<exports.length; i++) {
+      var node=exports[i].parentElement;
+      while (node && node !== document.body) {
+        var rect=node.getBoundingClientRect();
+        var text=node.textContent || '';
+        if (rect.width > 180 && rect.width < innerWidth*.97 && rect.height > innerHeight*.42
+            && text.includes('导出会话日志') && text.includes('跟随系统') && text.includes('px')) return node;
+        node=node.parentElement;
+      }
+    }
+    return null;
+  }
+  function addTools(panel) {
+    if(panel.querySelector('[data-dsha-workspace-tools]')) return;
+    var wrapper = document.createElement('section');
+    wrapper.setAttribute('data-dsha-workspace-tools','');
+    var header = document.createElement('h3'); header.textContent='工作台'; wrapper.appendChild(header);
+    entries.forEach(function(entry){
+      var btn=document.createElement('button'); btn.type='button'; btn.setAttribute('aria-label',entry[0]);
+      var icon=document.createElement('span'); icon.className='dsha-icon'; icon.textContent=entry[3]; btn.appendChild(icon);
+      var label=document.createElement('span'); label.appendChild(document.createTextNode(entry[0]));
+      var desc=document.createElement('small'); desc.textContent=entry[1]; label.appendChild(desc); btn.appendChild(label);
+      var arrow=document.createElement('span'); arrow.className='dsha-chevron'; arrow.textContent='›'; btn.appendChild(arrow);
+      btn.addEventListener('click',function(){ if(window.DshaNativeSettings) window.DshaNativeSettings.postMessage(entry[2]); });
+      wrapper.appendChild(btn);
+    });
+    // Use the existing scroll viewport when available; keep React-owned elements intact.
+    var scroll=panel.querySelector('[data-radix-scroll-area-viewport]') || panel;
+    scroll.appendChild(wrapper);
+  }
   function apply() {
-    var dialogs = document.querySelectorAll('[role="dialog"], [aria-modal="true"], dialog[open]');
-    for (var i=0;i<dialogs.length;i++) {
-      var dialog=dialogs[i];
-      if (!isSettings(dialog) || dialog.querySelector('[data-dsha-workspace-tools]')) continue;
-      var scroll = dialog.querySelector('[data-radix-scroll-area-viewport]') || Array.from(dialog.querySelectorAll('*')).find(function(e){return e.scrollHeight>e.clientHeight+50 && getComputedStyle(e).overflowY!=='visible';}) || dialog;
-      var wrapper = document.createElement('section');
-      wrapper.setAttribute('data-dsha-workspace-tools','');
-      var header = document.createElement('h3'); header.textContent='工作台'; wrapper.appendChild(header);
-      entries.forEach(function(entry){
-        var btn=document.createElement('button'); btn.type='button'; btn.setAttribute('aria-label',entry[0]);
-        var icon=document.createElement('span'); icon.className='dsha-icon'; icon.textContent=entry[3]; btn.appendChild(icon);
-        var label=document.createElement('span'); label.appendChild(document.createTextNode(entry[0]));
-        var desc=document.createElement('small'); desc.textContent=entry[1]; label.appendChild(desc); btn.appendChild(label);
-        var arrow=document.createElement('span'); arrow.className='dsha-chevron'; arrow.textContent='›'; btn.appendChild(arrow);
-        btn.addEventListener('click',function(){ if(window.DshaNativeSettings) window.DshaNativeSettings.postMessage(entry[2]); });
-        wrapper.appendChild(btn);
-      });
-      scroll.appendChild(wrapper);
+    var panel=sidebarSettings();
+    if (panel) {
+      panel.setAttribute('data-dsha-settings-panel','');
+      addTools(panel);
+      return;
+    }
+    var dialogs=document.querySelectorAll('[role="dialog"], [aria-modal="true"], dialog[open]');
+    for(var i=0;i<dialogs.length;i++) {
+      if(isSettings(dialogs[i])) {addTools(dialogs[i]);break;}
     }
   }
   var queued=false;
