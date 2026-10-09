@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean pendingOpenWeb;
     /** 本次进入是「直接进工作区」：不展示启停控制台，用自动进入的过渡页。 */
     private boolean directWorkspace;
+    private boolean returnToWeb;
     private String openedRecovery="";
     private final androidx.activity.result.ActivityResultLauncher<String> localNetworkPermission =
             registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
@@ -81,6 +82,15 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        returnToWeb = getIntent().getBooleanExtra("return_to_web", false);
+        if (returnToWeb) getOnBackPressedDispatcher().addCallback(this,
+                new androidx.activity.OnBackPressedCallback(true) {
+                    @Override public void handleOnBackPressed() {
+                        if (getSupportFragmentManager().getBackStackEntryCount() > 0)
+                            getSupportFragmentManager().popBackStack();
+                        else finish();
+                    }
+                });
         setContentView(R.layout.activity_main);
         findViewById(R.id.btn_tasks).setContentDescription(com.deepseekharness.app.util.UiText.choose("后台任务","Background tasks"));
         findViewById(R.id.btn_tasks).setOnClickListener(v->BackgroundTasksActivity.open(this));
@@ -175,6 +185,19 @@ public class MainActivity extends AppCompatActivity {
                     : getIntent().getBooleanExtra("open_plugins", false) ? R.id.nav_plugins : R.id.nav_launch);
         }
         nav.setVisibility(View.GONE);
+        if (returnToWeb) {
+            getSupportFragmentManager().executePendingTransactions();
+            String route = getIntent().getStringExtra("workspace_settings_route");
+            if (WorkspaceSettingsRoute.isAllowed(route)) {
+                androidx.fragment.app.Fragment destination = WorkspaceSettingsRoute.create(this, route);
+                if (destination != null && !getSupportFragmentManager().isStateSaved()) {
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, destination)
+                            .addToBackStack("web-settings")
+                            .commit();
+                }
+            }
+        }
         // 直接进入工作区时隐藏原生顶栏。
         if (!settingsEntry) {
             nav.setVisibility(View.GONE);
@@ -287,6 +310,7 @@ public class MainActivity extends AppCompatActivity {
 
     /** 设置页的「回到对话界面」入口：关闭原生界面，重新进入 DSH Web。 */
     public void enterWorkspace() {
+        if (returnToWeb) { finish(); return; }
         reenterWorkspace();
     }
 

@@ -121,7 +121,7 @@ public class WorkspaceBootFragment extends Fragment {
                     msg -> activity.runOnUiThread(() -> {
                         TextView view = status;
                         if (view != null)
-                            view.setText(com.deepseekharness.app.util.UiStateText.render(msg));
+                            view.setText(com.deepseekharness.app.util.UiText.choose("正在准备工作界面…", "Preparing workspace…"));
                     }));
             if (!accepted && controller.getWebAuthUrl().isEmpty()) {
                 showFailure(com.deepseekharness.app.util.UiText.text("无法开始启动，请到设置里的「运行与日志」重试"));
@@ -159,7 +159,7 @@ public class WorkspaceBootFragment extends Fragment {
         final long ticket = ++request;
         entering = true;
         ui.removeCallbacks(watch);
-        status.setText(com.deepseekharness.app.util.UiText.text("正在验证访问权限…"));
+        status.setText(com.deepseekharness.app.util.UiText.choose("正在连接工作界面…", "Connecting workspace…"));
         new Thread(() -> {
             String cookie = null;
             String failure = null;

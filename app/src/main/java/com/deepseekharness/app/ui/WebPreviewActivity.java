@@ -304,6 +304,20 @@ public class WebPreviewActivity extends PictureInPictureActivity implements WebF
                 &&authUrl!=null&&authUrl.equals(microphoneController.getWebAuthUrl()));
         updateDocumentLanguage(view);
         if (androidx.webkit.WebViewFeature.isFeatureSupported(androidx.webkit.WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            androidx.webkit.WebViewCompat.removeWebMessageListener(view,"DshaNativeSettings");
+            androidx.webkit.WebViewCompat.addWebMessageListener(view,"DshaNativeSettings",
+                java.util.Collections.singleton(baseUrl.substring(0,baseUrl.length()-1)),
+                (source,message,origin,mainFrame,reply)->{
+                    if(source!=webView||!mainFrame||!WebPreviewPolicy.sameService(baseUrl,source.getUrl())
+                            ||isFinishing()||isDestroyed())return;
+                    try {
+                        String key=message.getData();
+                        if(!WorkspaceSettingsRoute.isAllowed(key))return;
+                        runOnUiThread(()->startActivity(new Intent(this, MainActivity.class)
+                                .putExtra("open_settings",true).putExtra("return_to_web",true)
+                                .putExtra("workspace_settings_route",key)));
+                    }catch(IllegalStateException ignored) { }
+                });
             androidx.webkit.WebViewCompat.removeWebMessageListener(view,"DshaLanguage");
             androidx.webkit.WebViewCompat.addWebMessageListener(view,"DshaLanguage",
                 java.util.Collections.singleton(baseUrl.substring(0,baseUrl.length()-1)),

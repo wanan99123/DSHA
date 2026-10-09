@@ -26,7 +26,9 @@ public final class WebPageScripts {
         + "\n"
         + read(context, "bridge-token-compat.cjs")
         + "\n"
-        + read(context, "web-integration/startup.js");
+        + read(context, "web-integration/startup.js")
+        + "\n"
+        + read(context, "web-integration/workspace-settings.js");
   }
 
   public static String compatibility(

@@ -51,7 +51,8 @@ public class SettingsFragment extends Fragment {
 
         LinearLayout tabs = v.findViewById(R.id.settings_tabs);
         // 首屏已并入设置：这里给出回到对话工作区的直接入口。
-        tabs.addView(buildWorkspaceRow(), new LinearLayout.LayoutParams(-1, -2));
+        if (!requireActivity().getIntent().getBooleanExtra("return_to_web", false))
+            tabs.addView(buildWorkspaceRow(), new LinearLayout.LayoutParams(-1, -2));
         for (int i = 0; i < TAB_OPTIONS.length; i++) {
             LinearLayout.LayoutParams spacing = new LinearLayout.LayoutParams(-1, -2);
             if (i > 0) spacing.topMargin = 0;
