@@ -32,6 +32,8 @@ public abstract class PictureInPictureActivity extends AppCompatActivity {
     private PictureInPictureFrame pictureFrame;
     private SharedPreferences picturePreferences;
     private boolean leavingForActivity;
+    /** Web 对话按 Home 时留在后台，不自动变成画中画。 */
+    private static final boolean AUTO_PICTURE_ON_HOME = false;
     private int restoredViewportWidth, restoredViewportHeight;
     private PendingIntent pictureToggle;
     private boolean pictureReceiverRegistered;
@@ -157,7 +159,7 @@ public abstract class PictureInPictureActivity extends AppCompatActivity {
         pictureFrame.setPictureLayout(pictureLayout);
         // Android 12+ 使用系统自动进入；是否允许完全由系统应用级画中画设置决定。
         boolean systemAllowed = allowed(this);
-        boolean autoEnter = !showing(this) && mayEnter();
+        boolean autoEnter = AUTO_PICTURE_ON_HOME && !showing(this) && mayEnter();
         int[] viewport = pictureFrame.pictureViewport();
         if (!pictureParamsApplied || viewport[0] != appliedViewportWidth || viewport[1] != appliedViewportHeight
                 || autoEnter != appliedAutoEnter || systemAllowed != appliedAllowed
@@ -197,7 +199,7 @@ public abstract class PictureInPictureActivity extends AppCompatActivity {
         refreshPictureInPicture();
         Intent launcher = new Intent(this, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra("open_settings", true);
+                .putExtra("open_web", true);
         try {
             startActivity(launcher);
         } finally {
@@ -208,11 +210,13 @@ public abstract class PictureInPictureActivity extends AppCompatActivity {
     @Override protected void onUserLeaveHint() {
         super.onUserLeaveHint();
         // Android 8–11 没有 auto-enter；回桌面或切换应用时在这里进入。
-        if (Build.VERSION.SDK_INT >= 26 && Build.VERSION.SDK_INT < 31) enterIfAllowed();
-        else if (pictureFrame != null && mayEnter()) pictureFrame.freezeViewport();
+        if (AUTO_PICTURE_ON_HOME) {
+            if (Build.VERSION.SDK_INT >= 26 && Build.VERSION.SDK_INT < 31) enterIfAllowed();
+            else if (pictureFrame != null && mayEnter()) pictureFrame.freezeViewport();
+        }
     }
     @Override public boolean onPictureInPictureRequested() {
-        return Build.VERSION.SDK_INT >= 26 && enterIfAllowed();
+        return AUTO_PICTURE_ON_HOME && Build.VERSION.SDK_INT >= 26 && enterIfAllowed();
     }
     @Override public void onPictureInPictureModeChanged(boolean inPicture, Configuration config) {
         if (pictureFrame != null) pictureFrame.setCompact(inPicture);

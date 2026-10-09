@@ -86,9 +86,7 @@ public class MainActivity extends AppCompatActivity {
         if (returnToWeb) getOnBackPressedDispatcher().addCallback(this,
                 new androidx.activity.OnBackPressedCallback(true) {
                     @Override public void handleOnBackPressed() {
-                        if (getSupportFragmentManager().getBackStackEntryCount() > 0)
-                            getSupportFragmentManager().popBackStack();
-                        else finish();
+                        finish();
                     }
                 });
         setContentView(R.layout.activity_main);
@@ -155,7 +153,8 @@ public class MainActivity extends AppCompatActivity {
                 }
                 title.setText("DSHA");
             } else if (id == R.id.nav_settings) {
-                f = new SettingsFragment();
+                String route = returnToWeb ? getIntent().getStringExtra("workspace_settings_route") : null;
+                f = WorkspaceSettingsRoute.isAllowed(route) ? WorkspaceSettingsRoute.create(this, route) : new SettingsFragment();
                 title.setText("DSHA");
             } else {
                 // 终端：默认挂真 PTY 页（vim/htop/tmux 能跑），可在 PTY 页切回简易版
@@ -185,19 +184,7 @@ public class MainActivity extends AppCompatActivity {
                     : getIntent().getBooleanExtra("open_plugins", false) ? R.id.nav_plugins : R.id.nav_launch);
         }
         nav.setVisibility(View.GONE);
-        if (returnToWeb) {
-            getSupportFragmentManager().executePendingTransactions();
-            String route = getIntent().getStringExtra("workspace_settings_route");
-            if (WorkspaceSettingsRoute.isAllowed(route)) {
-                androidx.fragment.app.Fragment destination = WorkspaceSettingsRoute.create(this, route);
-                if (destination != null && !getSupportFragmentManager().isStateSaved()) {
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.fragment_container, destination)
-                            .addToBackStack("web-settings")
-                            .commit();
-                }
-            }
-        }
+        // Web 发起的入口直接以目标页为根；返回时关闭此 Activity，露出原 Web 对话。
         // 直接进入工作区时隐藏原生顶栏。
         if (!settingsEntry) {
             nav.setVisibility(View.GONE);
@@ -257,7 +244,16 @@ public class MainActivity extends AppCompatActivity {
                 || intent.getBooleanExtra("open_launch", false))) {
             intent.removeExtra("open_launch");
             findViewById(R.id.app_bar).setVisibility(View.VISIBLE);
-            showSettingsEntry();
+            if (intent.getBooleanExtra("return_to_web", false)) {
+                returnToWeb = true;
+                String route = intent.getStringExtra("workspace_settings_route");
+                if (WorkspaceSettingsRoute.isAllowed(route)) {
+                    getSupportFragmentManager().popBackStackImmediate(null,
+                            androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
+                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+                            WorkspaceSettingsRoute.create(this, route)).commit();
+                }
+            } else showSettingsEntry();
         }
         if (nav != null && intent.getBooleanExtra("open_plugins", false)) nav.setSelectedItemId(R.id.nav_plugins);
         if (nav != null && intent.getBooleanExtra("open_launch", false)) {

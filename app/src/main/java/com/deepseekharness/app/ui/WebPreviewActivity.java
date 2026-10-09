@@ -313,9 +313,12 @@ public class WebPreviewActivity extends PictureInPictureActivity implements WebF
                     try {
                         String key=message.getData();
                         if(!WorkspaceSettingsRoute.isAllowed(key))return;
-                        runOnUiThread(()->startActivity(new Intent(this, MainActivity.class)
-                                .putExtra("open_settings",true).putExtra("return_to_web",true)
-                                .putExtra("workspace_settings_route",key)));
+                        runOnUiThread(()->{
+                            if (isFinishing() || isDestroyed()) return;
+                            startActivity(new Intent(this, MainActivity.class)
+                                    .putExtra("open_settings",true).putExtra("return_to_web",true)
+                                    .putExtra("workspace_settings_route",key));
+                        });
                     }catch(IllegalStateException ignored) { }
                 });
             androidx.webkit.WebViewCompat.removeWebMessageListener(view,"DshaLanguage");

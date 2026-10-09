@@ -20,9 +20,9 @@
     + '[data-dsha-workspace-tools] .dsha-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:rgba(95,103,220,.12);color:#6065ce;font-weight:bold;margin-right:12px;flex:none}'
     + '[data-dsha-workspace-tools] small{display:block;font-size:11px;opacity:.66;margin-top:3px}'
     + '[data-dsha-workspace-tools] .dsha-chevron{margin-left:auto;opacity:.55}'
-    + 'body:has([data-dsha-workspace-tools]) [role=dialog],body:has([data-dsha-workspace-tools]) [aria-modal=true],body:has([data-dsha-workspace-tools]) dialog[open]{max-height:100dvh!important;height:100dvh!important;min-height:100dvh!important;max-width:100vw!important;width:100vw!important;margin:0!important;border-radius:0!important;inset:0!important;transform:none!important}'
-    + 'body:has([data-dsha-workspace-tools]) [role=dialog] > *,body:has([data-dsha-workspace-tools]) [aria-modal=true] > *{max-height:100dvh!important}'
-    + 'body:has([data-dsha-workspace-tools]) [role=dialog] [data-radix-scroll-area-viewport]{max-height:calc(100dvh - 74px)!important}';
+    + 'body:has([data-dsha-workspace-tools]) [role=dialog],body:has([data-dsha-workspace-tools]) [aria-modal=true],body:has([data-dsha-workspace-tools]) dialog[open]{box-sizing:border-box!important;position:fixed!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;inset:auto!important;transform:translate(-50%,-50%)!important;width:min(92vw,560px)!important;max-width:92vw!important;height:min(78dvh,700px)!important;max-height:78dvh!important;min-height:0!important;overflow-y:auto!important;border-radius:18px!important;margin:0!important}'
+    + 'body:has([data-dsha-workspace-tools]) [role=dialog] > *,body:has([data-dsha-workspace-tools]) [aria-modal=true] > *{max-height:78dvh!important}'
+    + 'body:has([data-dsha-workspace-tools]) [role=dialog] [data-radix-scroll-area-viewport]{max-height:calc(78dvh - 74px)!important;overflow-y:auto!important}';
   // Document-start injection may run before <html> exists; attach only when the root is ready.
   function visible(e) { return e && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden'; }
   function isSettings(e) {
