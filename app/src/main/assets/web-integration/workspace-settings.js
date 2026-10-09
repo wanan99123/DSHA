@@ -23,7 +23,7 @@
     + 'body:has([data-dsha-workspace-tools]) [role=dialog],body:has([data-dsha-workspace-tools]) [aria-modal=true],body:has([data-dsha-workspace-tools]) dialog[open]{max-height:100dvh!important;height:100dvh!important;min-height:100dvh!important;max-width:100vw!important;width:100vw!important;margin:0!important;border-radius:0!important;inset:0!important;transform:none!important}'
     + 'body:has([data-dsha-workspace-tools]) [role=dialog] > *,body:has([data-dsha-workspace-tools]) [aria-modal=true] > *{max-height:100dvh!important}'
     + 'body:has([data-dsha-workspace-tools]) [role=dialog] [data-radix-scroll-area-viewport]{max-height:calc(100dvh - 74px)!important}';
-  (document.head || document.documentElement).appendChild(style);
+  // Document-start injection may run before <html> exists; attach only when the root is ready.
   function visible(e) { return e && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden'; }
   function isSettings(e) {
     if (!visible(e)) return false;
@@ -54,6 +54,7 @@
   var queued=false;
   function start(){
     if(!document.documentElement){setTimeout(start,20);return;}
+    (document.head || document.documentElement).appendChild(style);
     new MutationObserver(function(){if(queued)return;queued=true;requestAnimationFrame(function(){queued=false;apply();});})
       .observe(document.documentElement,{subtree:true,childList:true});
     apply();
