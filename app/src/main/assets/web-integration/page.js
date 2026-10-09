@@ -11,7 +11,19 @@ window.__dshaPageBack = function () {
     return true;
   }
   const frame = document.querySelector('[data-mobile-nav="frame"]');
-  if (visible(frame) && !frame.hasAttribute('data-sidebar-collapsed')) { escape(); return true; }
+  if (visible(frame) && !frame.hasAttribute('data-sidebar-collapsed')) {
+    const close = frame.querySelector('[aria-label="Close"], [aria-label="关闭"], [data-sidebar-close]');
+    if (visible(close)) close.click(); else escape(frame);
+    return true;
+  }
+  // 部分版本把设置渲染成侧边抽屉，而不是 role=dialog。
+  const drawer = Array.from(document.querySelectorAll('aside, [data-state="open"], [role="complementary"]')).find(el =>
+    visible(el) && el.textContent?.includes('导出会话日志') && el.textContent?.includes('字号'));
+  if (drawer) {
+    const close = drawer.querySelector('[aria-label="Close"], [aria-label="关闭"], [data-sidebar-close]');
+    if (visible(close)) close.click(); else escape(drawer);
+    return true;
+  }
   // 新版文件与预览由右侧面板控制器关闭，不能只改布局宽度而留下展开状态。
   const panel = document.querySelector('[data-sidebar-right-panel][data-sidebar-right-open]');
   if (visible(panel)) {

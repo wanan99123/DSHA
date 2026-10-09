@@ -189,7 +189,9 @@ public abstract class PictureInPictureActivity extends AppCompatActivity {
     }
     /** 返回原生启动页，不隐式进入画中画。 */
     protected final void leavePreview() {
-        returnToLauncher();
+        leavingForActivity = true;
+        refreshPictureInPicture();
+        finish();
     }
 
     private void returnToLauncher() {

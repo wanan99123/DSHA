@@ -541,7 +541,7 @@ public class WebPreviewActivity extends PictureInPictureActivity implements WebF
         Runnable fallback = () -> {
             if (!navigatingBack || webView != current || isDestroyed()) return;
             navigatingBack = false;
-            if (current.canGoBack()) current.goBack(); else leavePreview();
+            if (current.canGoBack()) current.goBack(); else moveTaskToBack(true);
         };
         current.postDelayed(fallback,1200);
         current.evaluateJavascript(WebPageScripts.back(this), result -> {
